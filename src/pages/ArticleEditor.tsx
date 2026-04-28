@@ -87,10 +87,10 @@ const ArticleEditor: React.FC = () => {
   };
 
   const handleAddTag = () => {
-    if (tagInput.trim() && !formData.tags.includes(tagInput.trim())) {
+    if (tagInput.trim() && !formData.tags?.includes(tagInput.trim())) {
       setFormData({
         ...formData,
-        tags: [...formData.tags, tagInput.trim()]
+        tags: [...(formData.tags || []), tagInput.trim()]
       });
       setTagInput('');
     }
@@ -99,7 +99,7 @@ const ArticleEditor: React.FC = () => {
   const handleRemoveTag = (tagToRemove: string) => {
     setFormData({
       ...formData,
-      tags: formData.tags.filter(tag => tag !== tagToRemove)
+      tags: (formData.tags || []).filter(tag => tag !== tagToRemove)
     });
   };
 
@@ -287,7 +287,7 @@ const ArticleEditor: React.FC = () => {
                 </button>
               </div>
               <div className="flex flex-wrap gap-2">
-                {formData.tags.map((tag, index) => (
+                {(formData.tags || []).map((tag, index) => (
                   <span
                     key={index}
                     className="bg-blue-100 text-blue-800 text-sm px-3 py-1 rounded-full flex items-center gap-2"

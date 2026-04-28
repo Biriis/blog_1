@@ -100,7 +100,13 @@ export const articleAPI = {
     
     const newArticle: Article = {
       id: Date.now().toString(),
-      ...data,
+      title: data.title,
+      coverImage: data.coverImage || '',
+      summary: data.summary || '',
+      content: data.content,
+      publishDate: data.publishDate || now.split('T')[0],
+      tags: data.tags || [],
+      isDraft: data.isDraft || false,
       createdAt: now,
       updatedAt: now
     };
@@ -118,7 +124,13 @@ export const articleAPI = {
     
     const updatedArticle: Article = {
       ...articles[index],
-      ...data,
+      title: data.title,
+      coverImage: data.coverImage || articles[index].coverImage,
+      summary: data.summary || articles[index].summary,
+      content: data.content,
+      publishDate: data.publishDate || articles[index].publishDate,
+      tags: data.tags || articles[index].tags,
+      isDraft: data.isDraft !== undefined ? data.isDraft : articles[index].isDraft,
       updatedAt: new Date().toISOString()
     };
     
