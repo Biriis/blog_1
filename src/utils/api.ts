@@ -23,12 +23,12 @@ export interface Article {
 
 export interface ArticleFormData {
   title: string;
-  coverImage: string;
-  summary: string;
+  coverImage?: string;
+  summary?: string;
   content: string;
-  publishDate: string;
-  tags: string[];
-  isDraft: boolean;
+  publishDate?: string;
+  tags?: string[];
+  isDraft?: boolean;
 }
 
 export const api = {
