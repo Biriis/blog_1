@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { articleAPI } from '../utils/storage';
+import { api } from '../utils/api';
 import { Article } from '../types';
 import Header from '../components/Header';
 
@@ -10,14 +10,22 @@ const ArticleDetailPage: React.FC = () => {
   const [article, setArticle] = useState<Article | null>(null);
 
   useEffect(() => {
-    if (id) {
-      loadArticle(id);
-    }
+    const loadArticle = async () => {
+      if (id) {
+        try {
+          const data = await api.getArticle(id);
+          setArticle(data);
+        } catch (error) {
+          console.error('Failed to load article:', error);
+          setArticle(null);
+        }
+      }
+    };
+    loadArticle();
   }, [id]);
 
-  const loadArticle = (articleId: string) => {
-    const data = articleAPI.getById(articleId);
-    setArticle(data);
+  const handleBack = () => {
+    navigate('/');
   };
 
   const handleBack = () => {

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { articleAPI } from '../utils/storage';
+import { api } from '../utils/api';
 import { ArticleFormData } from '../types';
 import RichTextEditor from '../components/RichTextEditor';
 import CodeEditor from '../components/CodeEditor';
@@ -37,22 +37,27 @@ const ArticleEditor: React.FC = () => {
     }
   }, [isAuthenticated, isEditing, id]);
 
-  const loadArticle = (articleId: string) => {
-    const article = articleAPI.getById(articleId);
-    if (article) {
-      setFormData({
-        title: article.title,
-        coverImage: article.coverImage,
-        summary: article.summary,
-        content: article.content,
-        publishDate: article.publishDate,
-        tags: article.tags,
-        isDraft: article.isDraft,
-      });
+  const loadArticle = async (articleId: string) => {
+    try {
+      const article = await api.getArticle(articleId);
+      if (article) {
+        setFormData({
+          title: article.title,
+          coverImage: article.coverImage,
+          summary: article.summary,
+          content: article.content,
+          publishDate: article.publishDate,
+          tags: article.tags,
+          isDraft: article.isDraft,
+        });
+      }
+    } catch (err) {
+      console.error('Failed to load article:', err);
+      setError('加载文章失败');
     }
   };
 
-  const handleSubmit = (asDraft: boolean = false) => {
+  const handleSubmit = async (asDraft: boolean = false) => {
     if (!formData.title.trim()) {
       setError('请输入标题');
       return;
@@ -60,14 +65,25 @@ const ArticleEditor: React.FC = () => {
 
     setError('');
     const data = { ...formData, isDraft: asDraft };
+    const token = localStorage.getItem('token');
 
-    if (isEditing && id) {
-      articleAPI.update(id, data);
-    } else {
-      articleAPI.create(data);
+    if (!token) {
+      setError('请先登录');
+      navigate('/login');
+      return;
     }
 
-    navigate('/admin');
+    try {
+      if (isEditing && id) {
+        await api.updateArticle(id, data, token);
+      } else {
+        await api.createArticle(data, token);
+      }
+      navigate('/admin');
+    } catch (err) {
+      console.error('Failed to save article:', err);
+      setError('保存文章失败');
+    }
   };
 
   const handleAddTag = () => {

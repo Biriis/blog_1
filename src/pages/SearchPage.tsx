@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { articleAPI } from '../utils/storage';
+import { api } from '../utils/api';
 import { Article } from '../types';
 import ArticleCard from '../components/ArticleCard';
 import SearchBar from '../components/SearchBar';
@@ -16,10 +16,14 @@ const SearchPage: React.FC = () => {
   const keyword = searchParams.get('keyword') || '';
 
   useEffect(() => {
-    if (keyword) {
-      const data = articleAPI.search(keyword);
-      setArticles(data);
-    }
+    const loadArticles = async () => {
+      if (keyword) {
+        const data = await api.searchArticles(keyword);
+        setArticles(data);
+      }
+    };
+    
+    loadArticles();
     
     const lastFrame = sessionStorage.getItem('videoLastFrame');
     setHasLastFrame(!!lastFrame);

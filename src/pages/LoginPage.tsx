@@ -6,17 +6,27 @@ const LoginPage: React.FC = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setLoading(true);
 
-    if (login(username, password)) {
-      navigate('/admin');
-    } else {
-      setError('用户名或密码错误');
+    try {
+      const success = await login(username, password);
+      if (success) {
+        navigate('/admin');
+      } else {
+        setError('用户名或密码错误');
+      }
+    } catch (err) {
+      console.error('Login error:', err);
+      setError('登录失败，请稍后重试');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -60,9 +70,10 @@ const LoginPage: React.FC = () => {
 
           <button
             type="submit"
-            className="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition-colors"
+            disabled={loading}
+            className="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition-colors disabled:bg-blue-300"
           >
-            登录
+            {loading ? '登录中...' : '登录'}
           </button>
         </form>
 

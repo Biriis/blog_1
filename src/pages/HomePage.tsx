@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { articleAPI } from '../utils/storage';
-import { Article } from '../types';
+import { api } from '../utils/api';
+import { Article } from '../utils/api';
 import ArticleCard from '../components/ArticleCard';
 import SearchBar from '../components/SearchBar';
 import Header from '../components/Header';
@@ -29,9 +29,13 @@ const HomePage: React.FC = () => {
     }
   }, []);
 
-  const loadArticles = () => {
-    const data = articleAPI.getAll();
-    setArticles(data);
+  const loadArticles = async () => {
+    try {
+      const data = await api.getArticles();
+      setArticles(data);
+    } catch (error) {
+      console.error('加载文章失败:', error);
+    }
   };
 
   const captureLastFrame = () => {
