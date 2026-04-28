@@ -1,0 +1,50 @@
+[
+  {
+    "id": "f6cd2f41-2891-4019-b67a-5316cdc2e1f6",
+    "title": "欢迎访问我的个人博客",
+    "coverImage": "https://picsum.photos/800/400?random=1",
+    "summary": "这是一个使用现代技术栈开发的个人博客网站，支持富文本编辑和代码编辑功能。",
+    "content": "<h2>欢迎来到我的博客</h2><p>这是一个使用 React + TypeScript + Tailwind CSS 构建的现代化博客系统。</p><p>功能特点：</p><ul><li>响应式设计，适配各种设备</li><li>支持富文本编辑</li><li>支持代码编辑</li><li>全文搜索功能</li></ul>",
+    "publishDate": "2026-04-23",
+    "tags": [
+      "欢迎",
+      "博客",
+      "React"
+    ],
+    "isDraft": false,
+    "createdAt": "2026-04-23T09:21:43.457Z",
+    "updatedAt": "2026-04-23T09:21:43.457Z"
+  },
+  {
+    "id": "cd43efba-4a46-400b-ae1b-d614fa996f2b",
+    "title": "React Hooks 完全指南",
+    "coverImage": "https://picsum.photos/800/400?random=2",
+    "summary": "深入学习 React Hooks，包括 useState、useEffect、useContext 等常用 Hook 的使用方法和最佳实践。",
+    "content": "<h2>React Hooks 完全指南</h2><p>React Hooks 是 React 16.8 引入的新特性，让我们可以在函数组件中使用状态和其他 React 特性。</p><h3>useState</h3><p>useState 是最常用的 Hook，用于在函数组件中添加状态。</p>",
+    "publishDate": "2026-04-22",
+    "tags": [
+      "React",
+      "Hooks",
+      "前端"
+    ],
+    "isDraft": false,
+    "createdAt": "2026-04-23T09:21:43.457Z",
+    "updatedAt": "2026-04-23T09:21:43.457Z"
+  },
+  {
+    "id": "5a0c8cf4-8990-4a0b-b131-88e5ff57b2b9",
+    "title": "Tailwind CSS 实战技巧",
+    "coverImage": "https://picsum.photos/800/400?random=3",
+    "summary": "分享 Tailwind CSS 在实际项目中的使用技巧和经验总结。",
+    "content": "<h2>Tailwind CSS 实战技巧</h2><p>Tailwind CSS 是一个实用优先的 CSS 框架，本篇文章将分享一些实战技巧。</p><h3>响应式设计</h3><p>使用 Tailwind 可以轻松实现响应式设计。</p>",
+    "publishDate": "2026-04-21",
+    "tags": [
+      "CSS",
+      "Tailwind",
+      "前端"
+    ],
+    "isDraft": false,
+    "createdAt": "2026-04-23T09:21:43.457Z",
+    "updatedAt": "2026-04-23T09:21:43.457Z"
+  }
+]
