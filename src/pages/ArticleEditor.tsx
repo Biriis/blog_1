@@ -65,7 +65,7 @@ const ArticleEditor: React.FC = () => {
 
     setError('');
     const data = { ...formData, isDraft: asDraft };
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('authToken');
 
     if (!token) {
       setError('请先登录');

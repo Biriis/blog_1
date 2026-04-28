@@ -1,6 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { api } from '../utils/api';
-import { Article } from '../utils/api';
+import { api, Article } from '../utils/api';
 import ArticleCard from '../components/ArticleCard';
 import SearchBar from '../components/SearchBar';
 import Header from '../components/Header';
