@@ -35,15 +35,22 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setLoading(false);
   }, []);
 
-  const login = async (username: string, password: string): Promise<void> => {
-    const response = await api.login(username, password);
-    
-    setToken(response.token);
-    setUser(response.user);
-    setIsAuthenticated(true);
-    
-    localStorage.setItem('authToken', response.token);
-    localStorage.setItem('authUser', JSON.stringify(response.user));
+  const login = async (username: string, password: string): Promise<boolean> => {
+    try {
+      const response = await api.login(username, password);
+      
+      setToken(response.token);
+      setUser(response.user);
+      setIsAuthenticated(true);
+      
+      localStorage.setItem('authToken', response.token);
+      localStorage.setItem('authUser', JSON.stringify(response.user));
+      
+      return true;
+    } catch (error) {
+      console.error('Login failed:', error);
+      return false;
+    }
   };
 
   const logout = () => {

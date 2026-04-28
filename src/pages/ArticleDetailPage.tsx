@@ -28,10 +28,6 @@ const ArticleDetailPage: React.FC = () => {
     navigate('/');
   };
 
-  const handleBack = () => {
-    navigate('/');
-  };
-
   if (!article) {
     return (
       <div className="min-h-screen bg-gray-50">
