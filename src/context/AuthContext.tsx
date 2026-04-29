@@ -1,5 +1,5 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { api } from '../utils/api';
+import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import { authAPI } from '../utils/api';
 
 interface User {
   username: string;
@@ -10,59 +10,77 @@ interface AuthContextType {
   isAuthenticated: boolean;
   user: User | null;
   token: string | null;
-  login: (username: string, password: string) => Promise<boolean>;
+  login: (username: string, password: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
-  loading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
+    return localStorage.getItem('adminAuthenticated') === 'true';
+  });
+  const [user, setUser] = useState<User | null>(() => {
+    const userStr = localStorage.getItem('adminUser');
+    return userStr ? JSON.parse(userStr) : null;
+  });
+  const [token, setToken] = useState<string | null>(() => {
+    return localStorage.getItem('adminToken');
+  });
 
   useEffect(() => {
-    const savedToken = localStorage.getItem('authToken');
-    const savedUser = localStorage.getItem('authUser');
-    
-    if (savedToken && savedUser) {
-      setToken(savedToken);
-      setUser(JSON.parse(savedUser));
-      setIsAuthenticated(true);
+    const verifyToken = async () => {
+      const storedToken = localStorage.getItem('adminToken');
+      if (storedToken) {
+        try {
+          const response = await authAPI.verify(storedToken);
+          if (response.valid) {
+            setIsAuthenticated(true);
+            setToken(storedToken);
+            setUser(response.user);
+          } else {
+            logout();
+          }
+        } catch {
+          logout();
+        }
+      }
+    };
+
+    if (isAuthenticated && token) {
+      verifyToken();
     }
-    setLoading(false);
   }, []);
 
-  const login = async (username: string, password: string): Promise<boolean> => {
+  const login = async (username: string, password: string): Promise<{ success: boolean; error?: string }> => {
     try {
-      const response = await api.login(username, password);
+      const response = await authAPI.login(username, password);
       
-      setToken(response.token);
-      setUser(response.user);
+      localStorage.setItem('adminAuthenticated', 'true');
+      localStorage.setItem('adminToken', response.token);
+      localStorage.setItem('adminUser', JSON.stringify(response.user));
+
       setIsAuthenticated(true);
-      
-      localStorage.setItem('authToken', response.token);
-      localStorage.setItem('authUser', JSON.stringify(response.user));
-      
-      return true;
-    } catch (error) {
-      console.error('Login failed:', error);
-      return false;
+      setUser(response.user);
+      setToken(response.token);
+
+      return { success: true };
+    } catch (error: any) {
+      return { success: false, error: error.message || '登录失败' };
     }
   };
 
   const logout = () => {
-    setToken(null);
-    setUser(null);
     setIsAuthenticated(false);
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('authUser');
+    setUser(null);
+    setToken(null);
+    localStorage.removeItem('adminAuthenticated');
+    localStorage.removeItem('adminToken');
+    localStorage.removeItem('adminUser');
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, user, token, login, logout, loading }}>
+    <AuthContext.Provider value={{ isAuthenticated, user, token, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

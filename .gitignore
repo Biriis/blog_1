@@ -1,9 +1,10 @@
-﻿# 依赖
+# 依赖
 node_modules/
 package-lock.json
 
 # 构建输出
 build/
+dist/
 
 # 数据库
 *.db

@@ -15,18 +15,14 @@ const LoginPage: React.FC = () => {
     setError('');
     setLoading(true);
 
-    try {
-      const success = await login(username, password);
-      if (success) {
-        navigate('/admin');
-      } else {
-        setError('用户名或密码错误');
-      }
-    } catch (err) {
-      console.error('Login error:', err);
-      setError('登录失败，请稍后重试');
-    } finally {
-      setLoading(false);
+    const result = await login(username, password);
+    
+    setLoading(false);
+
+    if (result.success) {
+      navigate('/admin');
+    } else {
+      setError(result.error || '用户名或密码错误');
     }
   };
 
@@ -52,6 +48,7 @@ const LoginPage: React.FC = () => {
               onChange={(e) => setUsername(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
               required
+              disabled={loading}
             />
           </div>
 
@@ -65,13 +62,14 @@ const LoginPage: React.FC = () => {
               onChange={(e) => setPassword(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
               required
+              disabled={loading}
             />
           </div>
 
           <button
             type="submit"
-            disabled={loading}
             className="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition-colors disabled:bg-blue-300"
+            disabled={loading}
           >
             {loading ? '登录中...' : '登录'}
           </button>

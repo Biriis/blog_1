@@ -65,10 +65,12 @@ function saveArticles(articles: Article[]): void {
 }
 
 export const articleAPI = {
-  getAll: (params?: SearchParams): Article[] => {
+  getAll: (params?: SearchParams & { includeDrafts?: boolean }): Article[] => {
     let articles = loadArticles();
     
-    articles = articles.filter(article => !article.isDraft);
+    if (!params?.includeDrafts) {
+      articles = articles.filter(article => !article.isDraft);
+    }
     
     if (params?.tag) {
       articles = articles.filter(article => 
@@ -145,20 +147,37 @@ export const articleAPI = {
     saveArticles(filtered);
   },
 
-  search: (keyword: string): Article[] => {
+  search: (keyword: string, includeDrafts: boolean = false): Article[] => {
     const articles = loadArticles();
     const lowerKeyword = keyword.toLowerCase();
     
     return articles
-      .filter(article => 
-        !article.isDraft && (
+      .filter(article => {
+        const matchesKeyword = 
           article.title.toLowerCase().includes(lowerKeyword) ||
           article.content.toLowerCase().includes(lowerKeyword) ||
-          article.summary.toLowerCase().includes(lowerKeyword)
-        )
-      )
+          article.summary.toLowerCase().includes(lowerKeyword);
+        
+        if (includeDrafts) {
+          return matchesKeyword;
+        }
+        return !article.isDraft && matchesKeyword;
+      })
       .sort((a, b) => 
         new Date(b.publishDate).getTime() - new Date(a.publishDate).getTime()
       );
+  },
+
+  getDrafts: (): Article[] => {
+    const articles = loadArticles();
+    return articles
+      .filter(article => article.isDraft)
+      .sort((a, b) => 
+        new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+      );
+  },
+
+  publishDraft: (id: string): Article | null => {
+    return articleAPI.update(id, { isDraft: false } as ArticleFormData);
   },
 };

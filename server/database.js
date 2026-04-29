@@ -1,20 +1,31 @@
-import Database from 'better-sqlite3';
+import initSqlJs from 'sql.js';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import fs from 'fs';
+import bcrypt from 'bcryptjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const DB_PATH = process.env.DB_PATH || join(__dirname, 'blog.db');
 
 let db = null;
+let SQL = null;
 
-export function initDB() {
+export async function initDB() {
   try {
-    db = new Database(DB_PATH);
+    SQL = await initSqlJs();
     
-    db.exec(`
+    if (fs.existsSync(DB_PATH)) {
+      const buffer = fs.readFileSync(DB_PATH);
+      db = new SQL.Database(buffer);
+      console.log('✅ 已加载已有数据库');
+    } else {
+      db = new SQL.Database();
+      console.log('✅ 创建新数据库');
+    }
+    
+    db.run(`
       CREATE TABLE IF NOT EXISTS articles (
         id TEXT PRIMARY KEY,
         title TEXT NOT NULL,
@@ -29,7 +40,7 @@ export function initDB() {
       )
     `);
 
-    db.exec(`
+    db.run(`
       CREATE TABLE IF NOT EXISTS users (
         id TEXT PRIMARY KEY,
         username TEXT UNIQUE NOT NULL,
@@ -39,7 +50,7 @@ export function initDB() {
       )
     `);
 
-    db.exec(`
+    db.run(`
       CREATE TABLE IF NOT EXISTS images (
         id TEXT PRIMARY KEY,
         filename TEXT NOT NULL,
@@ -51,29 +62,28 @@ export function initDB() {
       )
     `);
 
-    db.exec(`CREATE INDEX IF NOT EXISTS idx_articles_publishDate ON articles(publishDate)`);
-    db.exec(`CREATE INDEX IF NOT EXISTS idx_articles_draft ON articles(isDraft)`);
-    db.exec(`CREATE INDEX IF NOT EXISTS idx_articles_title ON articles(title)`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_articles_publishDate ON articles(publishDate)`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_articles_draft ON articles(isDraft)`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_articles_title ON articles(title)`);
 
-    const userCount = db.prepare('SELECT COUNT(*) as count FROM users').get();
-    if (userCount.count === 0) {
-      const bcrypt = await import('bcryptjs');
+    const userCount = db.exec('SELECT COUNT(*) as count FROM users')[0]?.values[0][0] || 0;
+    if (userCount === 0) {
       const hashedPassword = bcrypt.hashSync(process.env.ADMIN_PASSWORD || 'admin123', 10);
       
-      db.prepare(`
+      db.run(`
         INSERT INTO users (id, username, password, role, createdAt)
         VALUES (?, ?, ?, ?, ?)
-      `).run(
+      `, [
         uuidv4(),
         process.env.ADMIN_USERNAME || 'admin',
         hashedPassword,
         'admin',
         new Date().toISOString()
-      );
+      ]);
     }
 
-    const articleCount = db.prepare('SELECT COUNT(*) as count FROM articles').get();
-    if (articleCount.count === 0) {
+    const articleCount = db.exec('SELECT COUNT(*) as count FROM articles')[0]?.values[0][0] || 0;
+    if (articleCount === 0) {
       const sampleArticles = [
         {
           id: uuidv4(),
@@ -113,13 +123,11 @@ export function initDB() {
         }
       ];
 
-      const insertArticle = db.prepare(`
-        INSERT INTO articles (id, title, coverImage, summary, content, publishDate, tags, isDraft, createdAt, updatedAt)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `);
-
       for (const article of sampleArticles) {
-        insertArticle.run(
+        db.run(`
+          INSERT INTO articles (id, title, coverImage, summary, content, publishDate, tags, isDraft, createdAt, updatedAt)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `, [
           article.id,
           article.title,
           article.coverImage,
@@ -130,10 +138,11 @@ export function initDB() {
           article.isDraft,
           article.createdAt,
           article.updatedAt
-        );
+        ]);
       }
     }
 
+    saveDatabase();
     console.log('✅ SQLite 数据库初始化成功');
     return db;
   } catch (error) {
@@ -142,9 +151,17 @@ export function initDB() {
   }
 }
 
+function saveDatabase() {
+  if (db) {
+    const data = db.export();
+    const buffer = Buffer.from(data);
+    fs.writeFileSync(DB_PATH, buffer);
+  }
+}
+
 export function getDB() {
   if (!db) {
-    initDB();
+    throw new Error('数据库未初始化，请先调用 initDB()');
   }
   return db;
 }
@@ -172,13 +189,29 @@ export function getAllArticles(filters = {}) {
 
   sql += ' ORDER BY publishDate DESC';
 
-  const articles = database.prepare(sql).all(...params);
+  const stmt = database.prepare(sql);
+  stmt.bind(params);
+  
+  const articles = [];
+  while (stmt.step()) {
+    articles.push(stmt.getAsObject());
+  }
+  stmt.free();
+  
   return articles.map(formatArticle);
 }
 
 export function getArticleById(id) {
   const database = getDB();
-  const article = database.prepare('SELECT * FROM articles WHERE id = ?').get(id);
+  const stmt = database.prepare('SELECT * FROM articles WHERE id = ?');
+  stmt.bind([id]);
+  
+  let article = null;
+  if (stmt.step()) {
+    article = stmt.getAsObject();
+  }
+  stmt.free();
+  
   return article ? formatArticle(article) : null;
 }
 
@@ -186,7 +219,7 @@ export function searchArticles(keyword) {
   const database = getDB();
   const lowerKeyword = `%${keyword.toLowerCase()}%`;
 
-  const articles = database.prepare(`
+  const stmt = database.prepare(`
     SELECT * FROM articles 
     WHERE isDraft = 0 
     AND (
@@ -195,8 +228,15 @@ export function searchArticles(keyword) {
       OR LOWER(summary) LIKE ?
     )
     ORDER BY publishDate DESC
-  `).all(lowerKeyword, lowerKeyword, lowerKeyword);
-
+  `);
+  stmt.bind([lowerKeyword, lowerKeyword, lowerKeyword]);
+  
+  const articles = [];
+  while (stmt.step()) {
+    articles.push(stmt.getAsObject());
+  }
+  stmt.free();
+  
   return articles.map(formatArticle);
 }
 
@@ -218,10 +258,10 @@ export function createArticle(data) {
     updatedAt: now
   };
 
-  database.prepare(`
+  database.run(`
     INSERT INTO articles (id, title, coverImage, summary, content, publishDate, tags, isDraft, createdAt, updatedAt)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(
+  `, [
     article.id,
     article.title,
     article.coverImage,
@@ -232,8 +272,9 @@ export function createArticle(data) {
     article.isDraft,
     article.createdAt,
     article.updatedAt
-  );
+  ]);
 
+  saveDatabase();
   return formatArticle(article);
 }
 
@@ -278,39 +319,45 @@ export function updateArticle(id, data) {
   params.push(id);
 
   const sql = `UPDATE articles SET ${updates.join(', ')} WHERE id = ?`;
-  const result = database.prepare(sql).run(...params);
-
-  if (result.changes === 0) {
-    return null;
-  }
+  database.run(sql, params);
+  saveDatabase();
 
   return getArticleById(id);
 }
 
 export function deleteArticle(id) {
   const database = getDB();
-  const result = database.prepare('DELETE FROM articles WHERE id = ?').run(id);
-  return result.changes > 0;
+  database.run('DELETE FROM articles WHERE id = ?', [id]);
+  saveDatabase();
+  return true;
 }
 
 export function getUserByUsername(username) {
   const database = getDB();
-  const user = database.prepare('SELECT * FROM users WHERE username = ?').get(username);
+  const stmt = database.prepare('SELECT * FROM users WHERE username = ?');
+  stmt.bind([username]);
+  
+  let user = null;
+  if (stmt.step()) {
+    user = stmt.getAsObject();
+  }
+  stmt.free();
+  
   return user || null;
 }
 
 export function createUser(data) {
   const database = getDB();
-  const bcrypt = await import('bcryptjs');
   const id = uuidv4();
   const now = new Date().toISOString();
   const hashedPassword = bcrypt.hashSync(data.password, 10);
 
-  database.prepare(`
+  database.run(`
     INSERT INTO users (id, username, password, role, createdAt)
     VALUES (?, ?, ?, ?, ?)
-  `).run(id, data.username, hashedPassword, data.role || 'admin', now);
+  `, [id, data.username, hashedPassword, data.role || 'admin', now]);
 
+  saveDatabase();
   return { id, username: data.username, role: data.role || 'admin', createdAt: now };
 }
 
@@ -319,23 +366,34 @@ export function saveImage(filename, originalName, mimetype, size, path) {
   const id = uuidv4();
   const now = new Date().toISOString();
 
-  database.prepare(`
+  database.run(`
     INSERT INTO images (id, filename, originalName, mimetype, size, path, createdAt)
     VALUES (?, ?, ?, ?, ?, ?, ?)
-  `).run(id, filename, originalName, mimetype, size, path, now);
+  `, [id, filename, originalName, mimetype, size, path, now]);
 
+  saveDatabase();
   return { id, filename, originalName, mimetype, size, path, createdAt: now };
 }
 
 export function getImageByFilename(filename) {
   const database = getDB();
-  return database.prepare('SELECT * FROM images WHERE filename = ?').get(filename);
+  const stmt = database.prepare('SELECT * FROM images WHERE filename = ?');
+  stmt.bind([filename]);
+  
+  let image = null;
+  if (stmt.step()) {
+    image = stmt.getAsObject();
+  }
+  stmt.free();
+  
+  return image;
 }
 
 export function deleteImage(filename) {
   const database = getDB();
-  const result = database.prepare('DELETE FROM images WHERE filename = ?').run(filename);
-  return result.changes > 0;
+  database.run('DELETE FROM images WHERE filename = ?', [filename]);
+  saveDatabase();
+  return true;
 }
 
 function formatArticle(article) {
@@ -357,7 +415,9 @@ export function backupDatabase() {
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
   const backupFile = join(backupPath, `blog-backup-${timestamp}.db`);
   
-  database.backup(backupFile);
+  const data = database.export();
+  const buffer = Buffer.from(data);
+  fs.writeFileSync(backupFile, buffer);
   
   console.log(`✅ 数据库备份成功: ${backupFile}`);
   return backupFile;

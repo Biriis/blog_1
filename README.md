@@ -40,11 +40,11 @@ npm install
 npm run dev
 ```
 
-前端将在 http://localhost:5173 启动
+前端将在 http://localhost:3000 启动
 
 ### 3. 开始使用
 
-直接在浏览器打开 http://localhost:5173
+直接在浏览器打开 http://localhost:3000
 
 ## 💡 使用说明
 

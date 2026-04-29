@@ -37,9 +37,9 @@ const storage = multer.diskStorage({
 
 const upload = multer({ 
   storage,
-  limits: { fileSize: 5 * 1024 * 1024 },
+  limits: { fileSize: 50 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
-    const allowedTypes = /jpeg|jpg|png|gif|webp/;
+    const allowedTypes = /jpeg|jpg|png|gif|webp|bmp/;
     const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
     const mimetype = allowedTypes.test(file.mimetype);
     if (extname && mimetype) {
@@ -71,9 +71,9 @@ app.use('/api', limiter);
 
 app.use('/uploads', express.static(UPLOAD_DIR));
 
-initDB();
+await initDB();
 
-function authenticateToken(req, res, next) {
+async function authenticateToken(req, res, next) {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
 
@@ -210,7 +210,7 @@ app.delete('/api/articles/:id', authenticateToken, (req, res) => {
   }
 });
 
-app.post('/api/upload', authenticateToken, upload.single('image'), async (req, res) => {
+app.post('/api/upload', upload.single('image'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: '请选择要上传的图片' });
