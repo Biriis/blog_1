@@ -1,22 +1,25 @@
-# 依赖
+# 依赖（这些会通过 npm install 自动安装）
 node_modules/
-package-lock.json
+server/node_modules/
 
-# 构建输出
-build/
+# 构建输出（需要重新构建）
 dist/
 
-# 数据库
+# 数据库（包含用户数据，不要上传）
 *.db
 *.db-journal
 
-# 环境变量
+# 环境变量（包含敏感信息，不要上传）
 .env
 .env.local
 .env.*.local
+.env.production
+.env.development
 
 # 日志
+logs/
 *.log
+npm-debug.log*
 
 # 操作系统
 .DS_Store
@@ -25,17 +28,21 @@ Thumbs.db
 # IDE
 .vscode/
 .idea/
+*.swp
+*.swo
 
-# 上传文件
-uploads/
-
-# 备份
-backups/
+# PM2
+.pm2/
 
 # 临时文件
 *.tmp
-*.temp
+*.bak
+.cache/
 
-# SSH 配置
-*.pem
-ssh-connect.ps1
+# 备份（如果只想保留Git上的beifen）
+beifen/server/node_modules/
+beifen/node_modules/
+
+# TypeScript编译缓存
+*.tsbuildinfo
+tsconfig.tsbuildinfo

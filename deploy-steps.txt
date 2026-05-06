@@ -1,8 +1,0 @@
-# 在本机执行以下命令推送代码到 GitHub：
-git push origin main
-
-# 在服务器 192.3.159.110 上执行以下命令：
-cd /var/www/blog_1
-git pull origin main --force
-npm run build
-pm2 restart all
